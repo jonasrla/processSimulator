@@ -16,3 +16,6 @@ class roundRobin:
 	def __init__(self, quantum):
 		self.line = []
 		self.quantum = quantum
+class fcfs:
+	def __init__(self):
+		self.line = []

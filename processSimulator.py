@@ -17,16 +17,31 @@ class Queue(object):
     def run(self):
         raise NotImplementedError('Abstract method')
 
+    def peek(self):
+        return self.queue[0]
+
+
 class Process(object):
     def __init__(self, pid, burst, ios=0):
         self.pid = pid
-        #TODO build the timeline from burst and i
-        self.timeline = [{'time': 40, 'kind': 'CPU'}, {'time': 20, 'kind': 'IO'}, {'time': 40, 'kind': 'CPU'}]
+
+        t_cpu = [burst / (ios + 1)] * (ios + 1)
+        t_cpu[-1] += burst % (ios + 1)
+        t_io = [20] * ios
+
+        self.timeline = []
+        i_cpu = iter(t_cpu)
+        i_io = iter(t_io)
+        while True:
+            try:
+                #XXX: i_io will stop after i_cpu
+                self.timeline.append({'time': i_cpu.next(), 'kind': 'CPU'})
+                self.timeline.append({'time': i_io.next(), 'kind': 'IO'})
+            except StopIteration:
+                break
+
         self.inIO = (self.timeline[0]["kind"] == "IO")
         self.isOver = False
-
-    def getPid(self):
-        return self.pid
 
     def work(self):
         if not self.inIO:
@@ -81,7 +96,7 @@ class RoundRobin(Queue):
 
     def run(self):
         # print "run len(" + str(len(self.queue)) + ") " + str(self.quantum)
-        pid = self.queue[0].getPid()
+        pid = self.queue[0].pid
         if (not self.queue[0].isInterrupted()):
             self.queue[0].work()
             self.queue[0].quantum -= 1
@@ -99,7 +114,9 @@ class RoundRobin(Queue):
 
 class IO(Queue):
     def run(self):
+        proc = self.peek()
         self.queue[0].readWrite()
+        return proc.pid
 
     def finishedIO(self):
         return self.queue[0].checkIO()
@@ -108,7 +125,7 @@ class IO(Queue):
 class FCFS(Queue):
     def run(self):
         print "run len(" + str(len(self.queue)) + ") " + "fcfs"
-        pid = self.queue[0].getPid()
+        pid = self.queue[0].pid
         if (not self.queue[0].isInterrupted()):
             self.queue[0].work()
             if self.queue[0].isOver:
@@ -125,14 +142,22 @@ class Schedule(object):
         self.q1 = RoundRobin(20, listaq1)
         self.q2 = FCFS(listaq2)
         self.io = IO()
-        self.log = []
+        self._log = []
+        self.t = 0
 
     def isOver(self):
         return self.q0.isEmpty() and self.q1.isEmpty() and self.q2.isEmpty() and self.io.isEmpty()
 
+    def log(self, msg, time_passed=True):
+        self._log.append((self.t, msg))
+        if time_passed:
+            self.t += 1
+
     def run(self):
         validCycle = True
         while not self.isOver():
+            cpuCycle = False
+
             if not self.q0.isEmpty():
                 if self.q0.isInterrupted():
                     validCycle = False
@@ -140,8 +165,9 @@ class Schedule(object):
 
                 elif not self.q0.timeOut():
                     pid = self.q0.run()
-                    if pid != None:
-                        self.log.append(str(pid) + " q0")
+                    if pid is not None:
+                        self.log(str(pid) + " q0")
+                        cpuCycle = True
 
                 elif self.q0.timeOut():
                     validCycle = False
@@ -155,8 +181,9 @@ class Schedule(object):
 
                 elif not self.q1.timeOut():
                     pid = self.q1.run()
-                    if pid != None:
-                        self.log.append(str(pid) + " q1")
+                    if pid is not None:
+                        self.log(str(pid) + " q1")
+                        cpuCycle = True
 
                 elif self.q1.timeOut():
                     validCycle = False
@@ -171,20 +198,21 @@ class Schedule(object):
 
                 else:
                     pid = self.q2.run()
-                    if pid != None:
-                        self.log.append(str(pid) + " q2")
+                    if pid is not None:
+                        self.log(str(pid) + " q2")
+                        cpuCycle = True
 
             if (not self.io.isEmpty()) and validCycle:
-                self.io.run()
+                pid = self.io.run()
                 if self.io.finishedIO():
                     self.q0.add(self.io.pop())
+                self.log(str(pid) + " io", time_passed=not cpuCycle)
 
             elif not validCycle:
                 validCycle = True
-        i = 0
-        for elem in self.log:
-            i += 1
-            print str(i) + " " + elem
+
+        for t, msg in self._log:
+            print t, msg
 
 if __name__ == "__main__":
     import argparse

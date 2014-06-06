@@ -36,7 +36,6 @@ class Process(object):
         else:
             raise Exception("Executando CPU em IO")
 
-        
     def readWrite(self):
         if self.inIO:
             self.timeLine[0]["time"] -= 1
@@ -60,21 +59,19 @@ class Process(object):
     #     return self.isOver
 
 
-
-
 class RoundRobin(Queue):
     def __init__(self, quantum, lista):
         Queue.__init__(self)
         self.quantum = quantum
         self.queue = [{
             "process": Process(lista[i]["pid"], lista[i]["timeLine"]),
-            "quantum": self.quantum
+            "quantum": self.quantum,
         } for i in range(len(lista))]
 
     def add(self, proc):
         self.queue.append({"process": proc, "quantum": self.quantum})
 
-    def returnQueue(self, proc,remainingQuantum):
+    def returnQueue(self, proc, remainingQuantum):
         self.queue.append({"process": proc, "quantum": remainingQuantum})
 
     def run(self):
@@ -94,6 +91,7 @@ class RoundRobin(Queue):
     def isInterrupted(self):
         return self.queue[0]["process"].isInterrupted()
 
+
 class IO(Queue):
     def __init__(self):
         Queue.__init__(self)
@@ -108,7 +106,7 @@ class IO(Queue):
 class FCFS(Queue):
     def __init__(self, lista):
         Queue.__init__(self)
-        self.queue = [process(lista[i]["pid"],lista[i]["timeLine"]) for i in range(len(lista))]
+        self.queue = [process(lista[i]["pid"], lista[i]["timeLine"]) for i in range(len(lista))]
 
     def run(self):
         print "run len(" + str(len(self.queue)) + ") " + "fcfs"
@@ -127,7 +125,7 @@ class FCFS(Queue):
 
 
 class Schedule(object):
-    def __init__(self,listaq0,listaq1,listaq2):
+    def __init__(self, listaq0, listaq1, listaq2):
         self.q0 = RoundRobin(10, listaq0)
         self.q1 = RoundRobin(20, listaq1)
         self.q2 = FCFS(listaq2)
@@ -140,12 +138,11 @@ class Schedule(object):
     def run(self):
         validCycle = True
         while not self.isOver():
-            
             if not self.q0.isEmpty():
                 if self.q0.isInterrupted():
                     validCycle = False
                     info = self.q0.pop()
-                    self.io.add((info["process"],0,info["quantum"]))
+                    self.io.add((info["process"], 0, info["quantum"]))
 
                 elif not self.q0.timeOut():
                     pid = self.q0.run()
@@ -162,7 +159,7 @@ class Schedule(object):
                 if self.q1.isInterrupted():
                     validCycle = False
                     info = self.q1.pop()
-                    self.io.add((info["process"],1,info["quantum"]))
+                    self.io.add((info["process"], 1, info["quantum"]))
 
                 elif not self.q1.timeOut():
                     pid = self.q1.run()
@@ -179,8 +176,8 @@ class Schedule(object):
                 if self.q2.isInterrupted():
                     validCycle = False
                     proc = self.q2.pop()
-                    self.io.add((proc,2,0))
-                
+                    self.io.add((proc, 2, 0))
+
                 else:
                     pid = self.q2.run()
                     if pid != None:
@@ -191,9 +188,9 @@ class Schedule(object):
                 if self.io.finishedIO():
                     info = self.io.pop()
                     if info[1] == 0:
-                        self.q0.returnQueue(info[0],info[2])
+                        self.q0.returnQueue(info[0], info[2])
                     elif info[1] == 1:
-                        self.q1.returnQueue(info[0],info[2])
+                        self.q1.returnQueue(info[0], info[2])
                     else:
                         self.q2.returnQueue(info[0])
             elif not validCycle:
@@ -203,18 +200,18 @@ class Schedule(object):
             i += 1
             print str(i) + " " + elem
 
-c = [{"time":40, "kind":"IO"}, {"time":20, "kind":"CPU"}]
-b = [{"time":40, "kind":"CPU"}, {"time":20, "kind":"IO"}, {"time":40, "kind":"CPU"}]
-a = [{"time":40, "kind":"CPU"}]
+c = [{"time": 40, "kind": "IO"}, {"time": 20, "kind": "CPU"}]
+b = [{"time": 40, "kind": "CPU"}, {"time": 20, "kind": "IO"}, {"time": 40, "kind": "CPU"}]
+a = [{"time": 40, "kind": "CPU"}]
 
-teste = Schedule([{"pid":1, "timeLine":c}],[],[])
+teste = Schedule([{"pid": 1, "timeLine": c}], [], [])
 teste.run()
 
 # if __name__ == "__main__":
 #   import argparse
 #   parser = argparse.ArgumentParser(description='Calcula o diagram de Gantt para uma dada configuracao inicial de processos')
 
-#   parser.add_argument('file', metavar='file', nargs='1',help='Arquivo csv com os dados de entrada')
+#   parser.add_argument('file', metavar='file', nargs='1', help='Arquivo csv com os dados de entrada')
 
 # 	if args.file:
 # 		with open(filename, 'rb') as f:

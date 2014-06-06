@@ -1,6 +1,10 @@
 import csv
 
+<<<<<<< HEAD
+class queue:
+=======
 class Queue(object):
+>>>>>>> f37fe2aff62c7bd1d7d7ad909e5c35677c805213
     def __init__(self):
         self.queue = []
 
@@ -13,7 +17,11 @@ class Queue(object):
     def isEmpty(self):
         return len(self.queue) == 0
 
+<<<<<<< HEAD
+class process:
+=======
 class Process(object):
+>>>>>>> f37fe2aff62c7bd1d7d7ad909e5c35677c805213
     def __init__(self, pid, timeLine):
         self.pid = pid
         self.timeLine = timeLine
@@ -33,7 +41,11 @@ class Process(object):
                 self.inIO = True
                 self.timeLine.pop(0)
 
+<<<<<<< HEAD
         
+=======
+
+>>>>>>> f37fe2aff62c7bd1d7d7ad909e5c35677c805213
     def readWrite(self):
         self.timeLine[0]["time"] -= 1
         if self.timeLine[0]["time"] == 0:
@@ -51,14 +63,23 @@ class Process(object):
         return not self.inIO
 
     # def isOver(self):
+<<<<<<< HEAD
     #   return self.isOver
 
+
+
+class roundRobin(queue):
+    def __init__(self, quantum, lista):
+        queue.__init__(self)
+=======
+    # 	return self.isOver
 
 
 
 class RoundRobin(Queue):
     def __init__(self, quantum, lista):
         Queue.__init__(self)
+>>>>>>> f37fe2aff62c7bd1d7d7ad909e5c35677c805213
         self.quantum = quantum
         self.queue = [{"process":process(lista[i]["pid"],lista[i]["timeLine"]), "quantum":self.quantum} for i in range(len(lista))]
 
@@ -69,12 +90,20 @@ class RoundRobin(Queue):
         self.queue.append({"process":proc, "quantum":remainingQuantum})
 
     def run(self):
+<<<<<<< HEAD
+        # print "run len(" + str(len(self.queue)) + ") " + str(self.quantum)                                #
+=======
         # print "run len(" + str(len(self.queue)) + ") " + str(self.quantum)								#
+>>>>>>> f37fe2aff62c7bd1d7d7ad909e5c35677c805213
         pid = self.queue[0]["process"].getPid()
         if (not self.queue[0]["process"].isInterrupted()):
             self.queue[0]["process"].work()
             self.queue[0]["quantum"] -= 1
+<<<<<<< HEAD
+            print self.queue[0]["quantum"]                                                                  #
+=======
             print self.queue[0]["quantum"]																	#
+>>>>>>> f37fe2aff62c7bd1d7d7ad909e5c35677c805213
             if (self.queue[0]["process"].isOver):
                 self.pop()
             return pid
@@ -85,9 +114,15 @@ class RoundRobin(Queue):
     def isInterrupted(self):
         return self.queue[0]["process"].isInterrupted()
 
+<<<<<<< HEAD
+class io(queue):
+    def __init__(self):
+        queue.__init__(self)
+=======
 class IO(Queue):
     def __init__(self):
         Queue.__init__(self)
+>>>>>>> f37fe2aff62c7bd1d7d7ad909e5c35677c805213
 
     def run(self):
         self.queue[0][0].readWrite()
@@ -96,6 +131,15 @@ class IO(Queue):
         return self.queue[0][0].checkIO()
 
 
+<<<<<<< HEAD
+class fcfs(queue):
+    def __init__(self, lista):
+        queue.__init__(self)
+        self.queue = [process(lista[i]["pid"],lista[i]["timeLine"]) for i in range(len(lista))]
+
+    def run(self):
+        print "run len(" + str(len(self.queue)) + ") " + "fcfs"                                         #
+=======
 class FCFS(Queue):
     def __init__(self, lista):
         Queue.__init__(self)
@@ -103,6 +147,7 @@ class FCFS(Queue):
 
     def run(self):
         print "run len(" + str(len(self.queue)) + ") " + "fcfs"
+>>>>>>> f37fe2aff62c7bd1d7d7ad909e5c35677c805213
         pid = self.queue[0].getPid()
         if (not self.queue[0]["process"].isInterrupted()):
             self.queue[0].work()
@@ -117,12 +162,21 @@ class FCFS(Queue):
         self.add(proc)
 
 
+<<<<<<< HEAD
+class schedule:
+    def __init__(self,listaq0,listaq1,listaq2):
+        self.q0 = roundRobin(10, listaq0)
+        self.q1 = roundRobin(20, listaq1)
+        self.q2 = fcfs(listaq2)
+        self.io = io()
+=======
 class Schedule(object):
     def __init__(self,listaq0,listaq1,listaq2):
         self.q0 = Robin(10, listaq0)
         self.q1 = Robin(20, listaq1)
         self.q2 = FCFS(listaq2)
         self.io = IO()
+>>>>>>> f37fe2aff62c7bd1d7d7ad909e5c35677c805213
         self.log = []
 
     def isOver(self):
@@ -131,11 +185,27 @@ class Schedule(object):
     def run(self):
         while not self.isOver():
             if not self.q0.isEmpty():
+<<<<<<< HEAD
+                print self.q0.isEmpty()                                                                 #
+=======
                 print self.q0.isEmpty()																	#
+>>>>>>> f37fe2aff62c7bd1d7d7ad909e5c35677c805213
                 if not self.q0.timeOut():
                     pid = self.q0.run()
                     if pid != None:
                         self.log.append(pid)
+<<<<<<< HEAD
+            
+                elif self.q0.timeOut():
+                    print "timeOut"                                                                     #                                       
+                    proc = self.q0.pop()                                                
+                    self.q1.add(proc)                                                   
+            
+                elif self.q0.isInterrupted():
+                    info = self.q0.pop()                                                
+                    self.io.add((info[0],0,info[1]))                                    
+            
+=======
 
                 elif self.q0.timeOut():
                     print "timeOut"																		#										
@@ -146,12 +216,17 @@ class Schedule(object):
                     info = self.q0.pop()												
                     self.io.add((info[0],0,info[1]))									
 
+>>>>>>> f37fe2aff62c7bd1d7d7ad909e5c35677c805213
             elif not self.q1.isEmpty():
                 pid = self.q0.run()
                 if not self.q1.timeOut():
                     if pid != None:
                         self.log.append(pid)
+<<<<<<< HEAD
+                
+=======
 
+>>>>>>> f37fe2aff62c7bd1d7d7ad909e5c35677c805213
                 elif self.q1.timeOut():
                     proc = self.q1.pop()
                     self.q2.add(proc)
@@ -164,11 +239,19 @@ class Schedule(object):
                 pid = self.q0.run()
                 if pid != None:
                     self.log.append(pid)
+<<<<<<< HEAD
+            
+                if self.q2.isInterrupted():
+                    proc = self.q2.pop()
+                    self.io.add((proc,2,0))
+            
+=======
 
                 if self.q2.isInterrupted():
                     proc = self.q2.pop()
                     self.io.add((proc,2,0))
 
+>>>>>>> f37fe2aff62c7bd1d7d7ad909e5c35677c805213
             if not self.io.isEmpty():
                 self.io.run()
                 if self.io.finishedIO():
@@ -179,7 +262,11 @@ class Schedule(object):
                         self.q1.returnQueue(info[0],info[2])
                     else:
                         self.q2.returnQueue(info[0])
+<<<<<<< HEAD
+        print len(self.log)                                                                             #
+=======
         print len(self.log)
+>>>>>>> f37fe2aff62c7bd1d7d7ad909e5c35677c805213
 
 a = [{"time":40, "kind":"CPU"}]
 
@@ -187,10 +274,28 @@ teste = Schedule([{"pid":1, "timeLine":a}],[],[])
 teste.run()
 
 # if __name__ == "__main__":
+<<<<<<< HEAD
 #   import argparse
 #   parser = argparse.ArgumentParser(description='Calcula o diagram de Gantt para uma dada configuracao inicial de processos')
 
 #   parser.add_argument('file', metavar='file', nargs='1',help='Arquivo csv com os dados de entrada')
+
+#   if args.file:
+#       with open(filename, 'rb') as f:
+#           reader = csv.reader(f)
+#           try:
+#               reader.next()
+#               for row in reader:
+#                       process_record(row)
+#           except csv.Error as e:
+#               print >> sys.stderr, 'Error on file %s, line %d: %s' % (filename, reader.line_num, e)
+#   else:
+#       parser.print_help()
+=======
+# 	import argparse
+# 	parser = argparse.ArgumentParser(description='Calcula o diagram de Gantt para uma dada configuracao inicial de processos')
+
+# 	parser.add_argument('file', metavar='file', nargs='1',help='Arquivo csv com os dados de entrada')
 
 # 	if args.file:
 # 		with open(filename, 'rb') as f:
@@ -203,3 +308,4 @@ teste.run()
 # 				print >> sys.stderr, 'Error on file %s, line %d: %s' % (filename, reader.line_num, e)
 # 	else:
 # 		parser.print_help()
+>>>>>>> f37fe2aff62c7bd1d7d7ad909e5c35677c805213

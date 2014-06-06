@@ -24,25 +24,31 @@ class Process(object):
         return self.pid
 
     def work(self):
-        self.timeLine[0]["time"] -= 1
-        if self.timeLine[0]["time"] == 0:
-            if len(self.timeLine) == 1:
-                self.isOver = True
+        if not self.inIO:
+            self.timeLine[0]["time"] -= 1
+            if self.timeLine[0]["time"] == 0:
+                if len(self.timeLine) == 1:
+                    self.isOver = True
 
-            else:
-                self.inIO = True
-                self.timeLine.pop(0)
+                else:
+                    self.inIO = True
+                    self.timeLine.pop(0)
+        else:
+            raise Exception("Executando CPU em IO")
 
         
     def readWrite(self):
-        self.timeLine[0]["time"] -= 1
-        if self.timeLine[0]["time"] == 0:
-            if len(self.timeLine) == 1:
-                self.isOver = True
+        if self.inIO:
+            self.timeLine[0]["time"] -= 1
+            if self.timeLine[0]["time"] == 0:
+                if len(self.timeLine) == 1:
+                    self.isOver = True
 
-            else:
-                self.inIO = False
-                self.timeLine.pop(0)
+                else:
+                    self.inIO = False
+                    self.timeLine.pop(0)
+        else:
+            raise Exception("Executando IO em CPU")
 
     def isInterrupted(self):
         return self.inIO
@@ -77,7 +83,7 @@ class RoundRobin(Queue):
         if (not self.queue[0]["process"].isInterrupted()):
             self.queue[0]["process"].work()
             self.queue[0]["quantum"] -= 1
-            print self.queue[0]["quantum"]
+            #print self.queue[0]["quantum"]
             if (self.queue[0]["process"].isOver):
                 self.pop()
             return pid
@@ -107,9 +113,9 @@ class FCFS(Queue):
     def run(self):
         print "run len(" + str(len(self.queue)) + ") " + "fcfs"
         pid = self.queue[0].getPid()
-        if (not self.queue[0]["process"].isInterrupted()):
+        if (not self.queue[0].isInterrupted()):
             self.queue[0].work()
-            if self.queue[0].isOver():
+            if self.queue[0].isOver:
                 self.queue.pop(0)
             return pid
 
@@ -132,47 +138,55 @@ class Schedule(object):
         return self.q0.isEmpty() and self.q1.isEmpty() and self.q2.isEmpty() and self.io.isEmpty()
 
     def run(self):
+        validCycle = True
         while not self.isOver():
+            
             if not self.q0.isEmpty():
-                print self.q0.isEmpty()
-                if not self.q0.timeOut():
+                if self.q0.isInterrupted():
+                    validCycle = False
+                    info = self.q0.pop()
+                    self.io.add((info["process"],0,info["quantum"]))
+
+                elif not self.q0.timeOut():
                     pid = self.q0.run()
                     if pid != None:
-                        self.log.append(pid)
+                        self.log.append(str(pid) + " q0")
 
                 elif self.q0.timeOut():
-                    print "timeOut"
-                    proc = self.q0.pop()
-                    self.q1.add(proc)
-
-                elif self.q0.isInterrupted():
+                    validCycle = False
+                    print "timeOut 1"
                     info = self.q0.pop()
-                    self.io.add((info[0],0,info[1]))
+                    self.q1.add(info["process"])
 
             elif not self.q1.isEmpty():
-                pid = self.q0.run()
-                if not self.q1.timeOut():
+                if self.q1.isInterrupted():
+                    validCycle = False
+                    info = self.q1.pop()
+                    self.io.add((info["process"],1,info["quantum"]))
+
+                elif not self.q1.timeOut():
+                    pid = self.q1.run()
                     if pid != None:
-                        self.log.append(pid)
+                        self.log.append(str(pid) + " q1")
 
                 elif self.q1.timeOut():
-                    proc = self.q1.pop()
-                    self.q2.add(proc)
-
-                elif self.q1.isInterrupted():
-                    info = self.q0.pop()
-                    self.io.add((info[0],1,info[1]))
+                    validCycle = False
+                    print "timeOut 2"
+                    info = self.q1.pop()
+                    self.q2.add(info["process"])
 
             elif not self.q2.isEmpty():
-                pid = self.q0.run()
-                if pid != None:
-                    self.log.append(pid)
-
                 if self.q2.isInterrupted():
+                    validCycle = False
                     proc = self.q2.pop()
                     self.io.add((proc,2,0))
+                
+                else:
+                    pid = self.q2.run()
+                    if pid != None:
+                        self.log.append(str(pid) + " q2")
 
-            if not self.io.isEmpty():
+            if (not self.io.isEmpty()) and validCycle:
                 self.io.run()
                 if self.io.finishedIO():
                     info = self.io.pop()
@@ -182,11 +196,18 @@ class Schedule(object):
                         self.q1.returnQueue(info[0],info[2])
                     else:
                         self.q2.returnQueue(info[0])
-        print len(self.log)
+            elif not validCycle:
+                validCycle = True
+        i = 0
+        for elem in self.log:
+            i += 1
+            print str(i) + " " + elem
 
+c = [{"time":40, "kind":"IO"}, {"time":20, "kind":"CPU"}]
+b = [{"time":40, "kind":"CPU"}, {"time":20, "kind":"IO"}, {"time":40, "kind":"CPU"}]
 a = [{"time":40, "kind":"CPU"}]
 
-teste = Schedule([{"pid":1, "timeLine":a}],[],[])
+teste = Schedule([{"pid":1, "timeLine":c}],[],[])
 teste.run()
 
 # if __name__ == "__main__":

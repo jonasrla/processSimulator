@@ -1,6 +1,7 @@
 #TODO put a license header
 # vim: et ai si sw=4 ts=4 sts=4
 
+# vide fim do arquivo
 
 class Queue(object):
     def __init__(self, proc_list=[]):
@@ -76,9 +77,6 @@ class Process(object):
     def checkIO(self):
         return not self.inIO
 
-    # def isOver(self):
-    #     return self.isOver
-
 
 class RoundRobin(Queue):
     def __init__(self, quantum, proc_list=[]):
@@ -96,12 +94,10 @@ class RoundRobin(Queue):
         super(RoundRobin, self).add(proc)
 
     def run(self):
-        # print 'run len(' + str(len(self.queue)) + ') ' + str(self.quantum)
         pid = self.queue[0].pid
         if (not self.queue[0].isInterrupted()):
             self.queue[0].work()
             self.queue[0].quantum -= 1
-            #print self.queue[0].quantum
             if (self.queue[0].isOver):
                 self.pop()
             return pid
@@ -125,7 +121,6 @@ class IO(Queue):
 
 class FCFS(Queue):
     def run(self):
-        # print 'run len(' + str(len(self.queue)) + ') ' + 'fcfs'
         pid = self.queue[0].pid
         if (not self.queue[0].isInterrupted()):
             self.queue[0].work()
@@ -164,25 +159,26 @@ class Schedule(object):
 
     def run(self):
         validCycle = True
+        # Fatiamos o tempo de 1 ms e a cada segundo o escalonador checa as filas seguindo o algoritmo até o fim
         while not self.isOver():
             cpuCycle = False
-
+            # Efetuasse a primeira fila se não hover ninguém
             if not self.q0.isEmpty():
+                #Se houve interrupção de IO, passa para a fila de IO
                 if self.q0.isInterrupted():
                     validCycle = False
                     self.io.add(self.q0.pop())
-
+                #Se o processo não estiver em timeOut, roda o processo da lista
                 elif not self.q0.timeOut():
                     pid = self.q0.run()
                     if pid is not None:
                         self.log('p' + str(pid) + ' q0')
                         cpuCycle = True
-
+                #Se o processo estiver em timeOut, passa para próxima fila
                 elif self.q0.timeOut():
                     validCycle = False
-                    # print 'timeOut 1'
                     self.q1.add(self.q0.pop())
-
+            # Análogo ao q0
             elif not self.q1.isEmpty():
                 if self.q1.isInterrupted():
                     validCycle = False
@@ -196,7 +192,6 @@ class Schedule(object):
 
                 elif self.q1.timeOut():
                     validCycle = False
-                    # print 'timeOut 2'
                     self.q2.add(self.q1.pop())
 
             elif not self.q2.isEmpty():
@@ -210,7 +205,7 @@ class Schedule(object):
                     if pid is not None:
                         self.log('p' + str(pid) + ' q2')
                         cpuCycle = True
-
+            # Fila de IO roda em paralelo as filas do CPU se não estiver vazia
             if (not self.io.isEmpty()) and validCycle:
                 pid = self.io.run()
                 if self.io.finishedIO():
@@ -260,6 +255,7 @@ if __name__ == '__main__':
                 proc = Process(i+1, burst = burst, ios = ios)
                 timeline.append(proc)
             schedule = Schedule(timeline)
+            #Comece por esse método
             schedule.run()
             schedule.show()
     else:

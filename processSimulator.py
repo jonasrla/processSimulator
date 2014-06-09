@@ -1,4 +1,5 @@
 #TODO put a license header
+# vim: et ai si sw=4 ts=4 sts=4
 
 
 class Queue(object):
@@ -40,13 +41,13 @@ class Process(object):
             except StopIteration:
                 break
 
-        self.inIO = (self.timeline[0]["kind"] == "IO")
+        self.inIO = (self.timeline[0]['kind'] == 'IO')
         self.isOver = False
 
     def work(self):
         if not self.inIO:
-            self.timeline[0]["time"] -= 1
-            if self.timeline[0]["time"] == 0:
+            self.timeline[0]['time'] -= 1
+            if self.timeline[0]['time'] == 0:
                 if len(self.timeline) == 1:
                     self.isOver = True
 
@@ -54,12 +55,12 @@ class Process(object):
                     self.inIO = True
                     self.timeline.pop(0)
         else:
-            raise Exception("Executando CPU em IO")
+            raise Exception('Executando CPU em IO')
 
     def readWrite(self):
         if self.inIO:
-            self.timeline[0]["time"] -= 1
-            if self.timeline[0]["time"] == 0:
+            self.timeline[0]['time'] -= 1
+            if self.timeline[0]['time'] == 0:
                 if len(self.timeline) == 1:
                     self.isOver = True
 
@@ -67,7 +68,7 @@ class Process(object):
                     self.inIO = False
                     self.timeline.pop(0)
         else:
-            raise Exception("Executando IO em CPU")
+            raise Exception('Executando IO em CPU')
 
     def isInterrupted(self):
         return self.inIO
@@ -95,7 +96,7 @@ class RoundRobin(Queue):
         super(RoundRobin, self).add(proc)
 
     def run(self):
-        # print "run len(" + str(len(self.queue)) + ") " + str(self.quantum)
+        # print 'run len(' + str(len(self.queue)) + ') ' + str(self.quantum)
         pid = self.queue[0].pid
         if (not self.queue[0].isInterrupted()):
             self.queue[0].work()
@@ -124,7 +125,7 @@ class IO(Queue):
 
 class FCFS(Queue):
     def run(self):
-        print "run len(" + str(len(self.queue)) + ") " + "fcfs"
+        # print 'run len(' + str(len(self.queue)) + ') ' + 'fcfs'
         pid = self.queue[0].pid
         if (not self.queue[0].isInterrupted()):
             self.queue[0].work()
@@ -142,14 +143,22 @@ class Schedule(object):
         self.q1 = RoundRobin(20, listaq1)
         self.q2 = FCFS(listaq2)
         self.io = IO()
-        self._log = []
+        self._log_io = {}
+        self._log_cpu = {}
         self.t = 0
 
     def isOver(self):
         return self.q0.isEmpty() and self.q1.isEmpty() and self.q2.isEmpty() and self.io.isEmpty()
 
     def log(self, msg, time_passed=True):
-        self._log.append((self.t, msg))
+        if msg.endswith('io'):
+            self._log_io[self.t] = msg
+            if self.t not in self._log_cpu:
+                self._log_cpu[self.t] = None
+        else:
+            self._log_cpu[self.t] = msg
+            if self.t not in self._log_io:
+                self._log_io[self.t] = None
         if time_passed:
             self.t += 1
 
@@ -166,12 +175,12 @@ class Schedule(object):
                 elif not self.q0.timeOut():
                     pid = self.q0.run()
                     if pid is not None:
-                        self.log(str(pid) + " q0")
+                        self.log('p' + str(pid) + ' q0')
                         cpuCycle = True
 
                 elif self.q0.timeOut():
                     validCycle = False
-                    print "timeOut 1"
+                    # print 'timeOut 1'
                     self.q1.add(self.q0.pop())
 
             elif not self.q1.isEmpty():
@@ -182,12 +191,12 @@ class Schedule(object):
                 elif not self.q1.timeOut():
                     pid = self.q1.run()
                     if pid is not None:
-                        self.log(str(pid) + " q1")
+                        self.log('p' + str(pid) + ' q1')
                         cpuCycle = True
 
                 elif self.q1.timeOut():
                     validCycle = False
-                    print "timeOut 2"
+                    # print 'timeOut 2'
                     self.q2.add(self.q1.pop())
 
             elif not self.q2.isEmpty():
@@ -199,34 +208,59 @@ class Schedule(object):
                 else:
                     pid = self.q2.run()
                     if pid is not None:
-                        self.log(str(pid) + " q2")
+                        self.log('p' + str(pid) + ' q2')
                         cpuCycle = True
 
             if (not self.io.isEmpty()) and validCycle:
                 pid = self.io.run()
                 if self.io.finishedIO():
                     self.q0.add(self.io.pop())
-                self.log(str(pid) + " io", time_passed=not cpuCycle)
+                self.log('p' + str(pid) + ' io', time_passed=not cpuCycle)
 
             elif not validCycle:
                 validCycle = True
+        self.log('')
 
-        for t, msg in self._log:
+    def unified_logs(self):
+        _log_cpu = sorted(self._log_cpu.items())
+        _log_io = sorted(self._log_io.items())
+        _msg_cpu = (None, None)
+        _msg_io = (None, None)
+        for (t_io, msg_io), (t_cpu, msg_cpu) in zip(_log_io, _log_cpu):
+            if _msg_cpu != msg_cpu:
+                _msg_cpu = msg_cpu
+                yield t_cpu, (msg_cpu or 'ocioso')
+            if _msg_io != msg_io and msg_io is not None:
+                _msg_io = msg_io
+                yield t_io - 1, msg_io
+
+    def show(self):
+        #for t, msg in sorted(self._log_io.items()):
+        #    print t, msg
+        #for t, msg in sorted(self._log_cpu.items()):
+        #    print t, msg
+        for t, msg in sorted(self.unified_logs()):
             print t, msg
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description='Calcula o diagram de Gantt para uma dada configuracao inicial de processos')
 
-    parser.add_argument('file', metavar='file', nargs='1', help='Arquivo csv com os dados de entrada')
+    parser.add_argument('file', metavar='file', nargs='?', help='Arquivo csv com os dados de entrada')
+
+    args = parser.parse_args()
 
     if args.file:
         with open(args.file, 'r') as f:
             timeline = []
-            for line in f:
+            lines = f.readlines()
+            for i, line in enumerate(lines[1:]):
                 burst, ios = map(int, line.split())
-                proc = {'burst': burst, 'IO': ios}
+                burst = burst * (ios + 1)
+                proc = Process(i+1, burst = burst, ios = ios)
                 timeline.append(proc)
             schedule = Schedule(timeline)
+            schedule.run()
+            schedule.show()
     else:
         parser.print_help()
